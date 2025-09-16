@@ -3,8 +3,8 @@ export PYTHONPATH="/root/gpufree-data/chenfeiyang/code/mmcot/Qwen-VL-master:$PYT
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 DIR=`pwd`
 
-export CUDA_VISIBLE_DEVICES=5,7
-GPUS_PER_NODE=2
+export CUDA_VISIBLE_DEVICES=5,6,7
+GPUS_PER_NODE=3
 
 NNODES=1
 NODE_RANK=0

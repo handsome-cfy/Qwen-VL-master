@@ -356,7 +356,28 @@ def train():
     data_module = make_supervised_data_module(
         tokenizer=tokenizer, data_args=data_args, max_len=training_args.model_max_length
     )
+    
+    # Freeze Model Except IB
+    if training_args.use_lora:
+        # 1. 先冻结整个模型
+        for n, p in model.named_parameters():
+            p.requires_grad = False
 
+        # 2. 解冻 LoRA 参数
+        for n, p in model.named_parameters():
+            if "lora_" in n:
+                p.requires_grad = True
+
+        # 3. 解冻 InformationBottleneck 参数
+        for n, p in model.named_parameters():
+            if "ibmodel." in n:
+                p.requires_grad = True
+    else:
+        # 非 LoRA 模式：只解冻 IB
+        for n, p in model.named_parameters():
+            if "ibmodel." not in n:
+                p.requires_grad = False
+            
     # Start trainner
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module

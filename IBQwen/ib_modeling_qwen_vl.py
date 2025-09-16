@@ -578,18 +578,6 @@ class IBQWenModel(QWenPreTrainedModel):
             fake_images = None
             images = None
 
-        # # IBNet  
-        # compressed, ib_lamb, ib_alpha, ib_loss_M = [], [], [], 0.
-        # for img in images:                      # 逐张处理，batch=1
-        #     img = img.unsqueeze(0)              # [1, N_patch, hidden]
-        #     out, lamb, alpha = self.ibmodel(img)   # 你的 tokenchoose 逻辑
-        #     out = self.ibmodel.tokenchoose(out)
-        #     compressed.append(out.squeeze(0))   # out: [1, k, hidden] → [k, hidden]
-        #     ib_lamb.append(lamb.squeeze(0))
-        #     ib_alpha.append(alpha.squeeze(0))
-        #     ib_loss_M += loss_M
-        # images = torch.stack(compressed, 0)     # [n_img, k, hidden]
-        # print('ib_alpha:', torch.stack(ib_alpha, 0))
         
         output_attentions = (
             output_attentions
@@ -653,9 +641,22 @@ class IBQWenModel(QWenPreTrainedModel):
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, input_shape, inputs_embeds, past_length
         )
-
+        # Finish Text Embeds
         hidden_states = inputs_embeds
-
+        
+        # IBNet  
+        compressed, ib_lamb, ib_alpha, ib_loss_M = [], [], [], 0.
+        for img in images:                      # 逐张处理，batch=1
+            img = img.unsqueeze(0)              # [1, N_patch, hidden]
+            out, lamb, alpha = self.ibmodel(img)   # 你的 tokenchoose 逻辑
+            out = self.ibmodel.tokenchoose(out, hidden_states)
+            compressed.append(out.squeeze(0))   # out: [1, k, hidden] → [k, hidden]
+            ib_lamb.append(lamb.squeeze(0))
+            ib_alpha.append(alpha.squeeze(0))
+            ib_loss_M += loss_M
+        images = torch.stack(compressed, 0)     # [n_img, k, hidden]
+        print('ib_alpha:', torch.stack(ib_alpha, 0))
+        
         kv_seq_len = hidden_states.size()[1]
         if past_key_values[0] is not None:
             # past key values[0][0] shape: bs * seq_len * head_num * dim
